@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Instalações - Frota COMPARTILHADA</title>
+    <title>Dashboard Instalações - Frota</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -78,13 +78,6 @@
             font-size: 1.2rem;
             opacity: 0.9;
             font-weight: 500;
-        }
-        
-        .timestamp {
-            color: var(--cinza-bem-claro);
-            font-size: 0.9rem;
-            font-weight: 500;
-            margin-top: 1rem;
         }
         
         .main-grid {
@@ -212,7 +205,6 @@
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
-            cursor: pointer;
         }
         
         .metric-card::before {
@@ -228,11 +220,6 @@
         .metric-card:hover {
             transform: translateY(-8px);
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
-        }
-        
-        .metric-card.active {
-            border: 2px solid var(--roxo);
-            transform: translateY(-8px);
         }
         
         .metric-icon {
@@ -319,14 +306,11 @@
             background: rgba(26, 32, 44, 0.8);
         }
         
-        .veiculo-card.filtered {
-            display: none !important;
-        }
-        
         .stat-value {
             font-size: 2rem;
             font-weight: 800;
             margin-bottom: 0.5rem;
+            line-height: 1;
         }
         
         .stat-label {
@@ -449,6 +433,56 @@
             color: white;
             transform: translateY(-2px);
         }
+
+        .comentario-box {
+            background: rgba(26, 32, 44, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+            color: var(--cinza-bem-claro);
+            font-size: 0.9rem;
+        }
+
+        .comentario-input {
+            width: 100%;
+            background: rgba(26, 32, 44, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 0.75rem;
+            color: var(--cinza-ultra-claro);
+            font-size: 0.85rem;
+            resize: vertical;
+            min-height: 60px;
+            margin-bottom: 0.5rem;
+        }
+
+        .comentario-input:focus {
+            outline: none;
+            border-color: var(--azul);
+            box-shadow: 0 0 0 2px rgba(49, 130, 206, 0.2);
+        }
+
+        .btn-salvar-comentario {
+            background: rgba(56, 161, 105, 0.2);
+            color: var(--verde);
+            border: 1px solid rgba(56, 161, 105, 0.3);
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-salvar-comentario:hover {
+            background: var(--verde);
+            color: white;
+            transform: translateY(-2px);
+        }
         
         .empty-state {
             text-align: center;
@@ -498,15 +532,21 @@
         .sidebar-stat:last-child {
             border-bottom: none;
         }
+        
+        .timestamp {
+            color: var(--cinza-bem-claro);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1><i class="fas fa-bus"></i> Dashboard de Instalações</h1>
-            <p>Controle profissional  Data COMPARTILHADOS  Frota de 150 </p>
+            <p>Controle profissional • Frota de 150 ônibus</p>
             <div class="timestamp">
-                <i class="fas fa-sync-alt"></i> Atualizado em {{ agora.strftime('%d/%m/%Y  s %H:%M') }}
+                <i class="fas fa-sync-alt"></i> Atualizado em <span id="currentDateTime"></span>
             </div>
         </div>
         
@@ -515,15 +555,15 @@
             <div class="sidebar">
                 <div style="margin-bottom: 2.5rem;">
                     <h2 class="form-title"><i class="fas fa-plus-circle"></i> Cadastrar Veículo</h2>
-                    <form action="/adicionar" method="POST">
+                    <form id="formVeiculo">
                         <div class="form-group">
                             <label class="form-label">Número do Prefixo</label>
-                            <input type="number" name="prefixo" class="form-input" placeholder="Ex: 257, 20520, 221" required min="1">
+                            <input type="number" id="prefixo" class="form-input" placeholder="Ex: 257, 20520, 221" required min="1">
                         </div>
                         
                         <div class="form-group">
                             <label class="form-label">Garagem</label>
-                            <select name="garagem" class="form-select" required>
+                            <select id="garagem" class="form-select" required>
                                 <option value="">Selecione a garagem</option>
                                 <option value="M.E OSASCO">M.E OSASCO</option>
                                 <option value="M.E SANTANA">M.E SANTANA</option>
@@ -533,14 +573,19 @@
                         
                         <div class="form-group">
                             <label class="form-label">Status da Instalação</label>
-                            <select name="status" class="form-select" required>
+                            <select id="status" class="form-select" required>
                                 <option value="Pendente">Pendente</option>
                                 <option value="Em Andamento">Em Andamento</option>
                                 <option value="Concluído">Concluído</option>
                             </select>
                         </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Comentário</label>
+                            <textarea id="comentario" class="form-input" placeholder="Ex: Falta configuração, Aguardando peças..." rows="3"></textarea>
+                        </div>
                         
-                        <button type="submit" class="btn">
+                        <button type="button" class="btn" onclick="adicionarVeiculo()">
                             <i class="fas fa-plus"></i> Adicionar Veículo
                         </button>
                     </form>
@@ -552,23 +597,23 @@
                     </h3>
                     <div class="sidebar-stat">
                         <span>Total de Veículos</span>
-                        <strong style="color: var(--azul);">{{ total }}</strong>
+                        <strong style="color: var(--azul);" id="statTotal">0</strong>
                     </div>
                     <div class="sidebar-stat">
                         <span>Concluídos</span>
-                        <strong style="color: var(--verde);">{{ concluidos }}</strong>
+                        <strong style="color: var(--verde);" id="statConcluidos">0</strong>
                     </div>
                     <div class="sidebar-stat">
                         <span>Em Andamento</span>
-                        <strong style="color: var(--laranja);">{{ andamento }}</strong>
+                        <strong style="color: var(--laranja);" id="statAndamento">0</strong>
                     </div>
                     <div class="sidebar-stat">
                         <span>Pendentes</span>
-                        <strong style="color: var(--vermelho);">{{ pendentes }}</strong>
+                        <strong style="color: var(--vermelho);" id="statPendentes">0</strong>
                     </div>
                     <div class="sidebar-stat">
                         <span>Percentual Geral</span>
-                        <strong style="color: var(--roxo);">{{ "%.1f"|format(percentual) }}%</strong>
+                        <strong style="color: var(--roxo);" id="statPercentual">0%</strong>
                     </div>
                 </div>
             </div>
@@ -577,209 +622,324 @@
             <div class="content">
                 <!-- Métricas -->
                 <div class="metrics-grid">
-                    <div class="metric-card active" onclick="filtrarVeiculos('todos')" id="card-todos">
+                    <div class="metric-card">
                         <div class="metric-icon" style="color: var(--azul);">
                             <i class="fas fa-tachometer-alt"></i>
                         </div>
-                        <div class="metric-number">{{ total }}</div>
+                        <div class="metric-number" id="metricTotal">0</div>
                         <div class="metric-label">Total de Veículos</div>
                     </div>
-                    <div class="metric-card" onclick="filtrarVeiculos('Concluído')" id="card-concluidos">
+                    <div class="metric-card">
                         <div class="metric-icon" style="color: var(--verde);">
                             <i class="fas fa-check-circle"></i>
                         </div>
-                        <div class="metric-number">{{ concluidos }}</div>
+                        <div class="metric-number" id="metricConcluidos">0</div>
                         <div class="metric-label">Instalações Concluídas</div>
                     </div>
-                    <div class="metric-card" onclick="filtrarVeiculos('Em Andamento')" id="card-andamento">
+                    <div class="metric-card">
                         <div class="metric-icon" style="color: var(--laranja);">
                             <i class="fas fa-spinner"></i>
                         </div>
-                        <div class="metric-number">{{ andamento }}</div>
+                        <div class="metric-number" id="metricAndamento">0</div>
                         <div class="metric-label">Em Andamento</div>
                     </div>
-                    <div class="metric-card" onclick="filtrarVeiculos('Pendente')" id="card-pendentes">
-                        <div class="metric-icon" style="color: var(--vermelho);">
-                            <i class="fas fa-clock"></i>
+                    <div class="metric-card">
+                        <div class="metric-icon" style="color: var(--roxo);">
+                            <i class="fas fa-chart-line"></i>
                         </div>
-                        <div class="metric-number">{{ pendentes }}</div>
-                        <div class="metric-label">Instalações Pendentes</div>
+                        <div class="metric-number" id="metricPercentual">0%</div>
+                        <div class="metric-label">Percentual Geral</div>
                     </div>
                 </div>
-
-                <script>
-                    function filtrarVeiculos(status) {
-                        // Remove a classe active de todos os cards
-                        document.querySelectorAll('.metric-card').forEach(card => {
-                            card.classList.remove('active');
-                        });
-                        
-                        // Adiciona a classe active no card clicado
-                        if (status === 'todos') {
-                            document.getElementById('card-todos').classList.add('active');
-                        } else if (status === 'Concluído') {
-                            document.getElementById('card-concluidos').classList.add('active');
-                        } else if (status === 'Em Andamento') {
-                            document.getElementById('card-andamento').classList.add('active');
-                        } else if (status === 'Pendente') {
-                            document.getElementById('card-pendentes').classList.add('active');
-                        }
-                        
-                        // Filtra os veículos
-                        document.querySelectorAll('.veiculo-card').forEach(card => {
-                            if (status === 'todos') {
-                                card.classList.remove('filtered');
-                            } else {
-                                const cardStatus = card.querySelector('.veiculo-status').textContent.trim();
-                                if (cardStatus === status) {
-                                    card.classList.remove('filtered');
-                                } else {
-                                    card.classList.add('filtered');
-                                }
-                            }
-                        });
-                    }
-
-                    // Inicializa mostrando todos os veículos
-                    document.addEventListener('DOMContentLoaded', function() {
-                        document.getElementById('card-todos').classList.add('active');
-                    });
-                </script>
-
+                
                 <!-- Barra de Progresso -->
                 <div class="form-container">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
                         <span style="font-weight: 700; color: var(--cinza-ultra-claro); font-size: 1.1rem;">
                             Progresso Geral do Projeto
                         </span>
-                        <span style="color: var(--cinza-bem-claro); font-weight: 600;">{{ "%.1f"|format(percentual) }}%</span>
+                        <span style="color: var(--cinza-bem-claro); font-weight: 600;" id="progressText">0%</span>
                     </div>
                     <div class="progress-bar">
-                        <div class="progress-fill progress-success" style="width: {{ percentual }}%"></div>
+                        <div class="progress-fill progress-success" id="progressBar" style="width: 0%"></div>
                     </div>
                 </div>
 
-                <!-- Seções das Garagens -->
-                {% for garagem_nome, veiculos_garagem in garagens.items() %}
-                    {% set total_garagem = veiculos_garagem|length %}
-                    {% set concluidos_garagem = veiculos_garagem|selectattr('status', 'equalto', 'Concluído')|list|length %}
-                    {% set andamento_garagem = veiculos_garagem|selectattr('status', 'equalto', 'Em Andamento')|list|length %}
-                    {% set pendentes_garagem = veiculos_garagem|selectattr('status', 'equalto', 'Pendente')|list|length %}
-                    {% set percentual_garagem = (concluidos_garagem / total_garagem * 100) if total_garagem > 0 else 0 %}
-                
-                <div class="garagem-section">
-                    <div class="garagem-header">
-                        <h2 class="garagem-title">
-                            <i class="fas fa-warehouse"></i> {{ garagem_nome }}
-                        </h2>
-                        <div style="color: var(--cinza-bem-claro); font-weight: 700; font-size: 1.1rem;">
-                            {{ total_garagem }} veículos • {{ "%.1f"|format(percentual_garagem) }}% concluído
-                        </div>
-                    </div>
-                    
-                    <div class="garagem-stats">
-                        <div class="stat">
-                            <div class="stat-value" style="color: var(--azul);">{{ total_garagem }}</div>
-                            <div class="stat-label">Total</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-value" style="color: var(--verde);">{{ concluidos_garagem }}</div>
-                            <div class="stat-label">Concluídos</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-value" style="color: var(--laranja);">{{ andamento_garagem }}</div>
-                            <div class="stat-label">Em Andamento</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-value" style="color: var(--vermelho);">{{ pendentes_garagem }}</div>
-                            <div class="stat-label">Pendentes</div>
-                        </div>
-                    </div>
-                    
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
-                        <span style="font-weight: 700; color: var(--cinza-ultra-claro);">
-                            Progresso da Garagem
-                        </span>
-                        <span style="color: var(--cinza-bem-claro); font-weight: 600;">{{ "%.1f"|format(percentual_garagem) }}%</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill progress-success" style="width: {{ percentual_garagem }}%"></div>
-                    </div>
-
-                    {% if veiculos_garagem %}
-                    <div class="veiculos-grid">
-                        {% for veiculo in veiculos_garagem %}
-                        {% set status_class = veiculo['status'].lower().replace(' ', '') %}
-                        <div class="veiculo-card {{ status_class }}">
-                            <div class="veiculo-prefixo">{{ veiculo['prefixo'] }}</div>
-                            <div class="veiculo-status status-{{ status_class }}">
-                                {{ veiculo['status'] }}
-                            </div>
-                            <div class="veiculo-data">
-                                <i class="far fa-clock"></i> {{ veiculo['data'] }}
-                            </div>
-                            <div class="veiculo-actions">
-                                <form action="/atualizar" method="POST">
-                                    <input type="hidden" name="prefixo" value="{{ veiculo['prefixo'] }}">
-                                    <select name="status" class="action-select" onchange="this.form.submit()">
-                                        <option value="Pendente" {% if veiculo['status'] == "Pendente" %}selected{% endif %}>🟡 Pendente</option>
-                                        <option value="Em Andamento" {% if veiculo['status'] == "Em Andamento" %}selected{% endif %}>🟠 Em Andamento</option>
-                                        <option value="Concluído" {% if veiculo['status'] == "Concluído" %}selected{% endif %}>🟢 Concluído</option>
-                                    </select>
-                                </form>
-                                
-                                <form action="/atualizar" method="POST">
-                                    <input type="hidden" name="prefixo" value="{{ veiculo['prefixo'] }}">
-                                    <select name="garagem" class="action-select" onchange="this.form.submit()">
-                                        <option value="M.E OSASCO" {% if veiculo['garagem'] == "M.E OSASCO" %}selected{% endif %}>🏭 M.E OSASCO</option>
-                                        <option value="M.E SANTANA" {% if veiculo['garagem'] == "M.E SANTANA" %}selected{% endif %}>🏭 M.E SANTANA</option>
-                                        <option value="MEGACAM OSASCO" {% if veiculo['garagem'] == "MEGACAM OSASCO" %}selected{% endif %}>🏭 MEGACAM OSASCO</option>
-                                    </select>
-                                </form>
-
-                                <form action="/atualizar" method="POST">
-                                    <input type="hidden" name="prefixo" value="{{ veiculo['prefixo'] }}">
-                                    <textarea 
-                                        name="comentario" 
-                                        class="action-select" 
-                                        placeholder="Adicione um comentário..." 
-                                        style="min-height: 60px; resize: vertical;"
-                                        onchange="this.form.submit()"
-                                    >{{ veiculo.get('comentario', '') }}</textarea>
-                                </form>
-                                
-                                <form action="/excluir" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir o veículo {{ veiculo['prefixo'] }}?')">
-                                    <input type="hidden" name="prefixo" value="{{ veiculo['prefixo'] }}">
-                                    <button type="submit" class="btn-excluir">
-                                        <i class="fas fa-trash"></i> Excluir
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="fas fa-bus"></i>
-                        </div>
-                        <h3 style="color: var(--cinza-bem-claro); margin-bottom: 1rem; font-size: 1.3rem;">
-                            Nenhum veículo cadastrado
-                        </h3>
-                        <p style="color: var(--cinza-mais-claro); font-size: 1rem;">
-                            Use o formulário ao lado para adicionar veículos
-                        </p>
-                    </div>
-                    {% endif %}
+                <!-- Garagens -->
+                <div id="garagensContainer">
+                    <!-- As garagens serão carregadas via JavaScript -->
                 </div>
-                {% endfor %}
             </div>
         </div>
     </div>
-    
+
     <script>
-        // Apenas animações
+        // Dados iniciais
+        let veiculos = JSON.parse(localStorage.getItem('veiculos')) || [];
+        
+        // Atualizar data e hora
+        function atualizarDataHora() {
+            const now = new Date();
+            const dateTimeStr = now.toLocaleDateString('pt-BR') + ' às ' + 
+                              now.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+            document.getElementById('currentDateTime').textContent = dateTimeStr;
+        }
+
+        // Adicionar veículo
+        function adicionarVeiculo() {
+            const prefixo = document.getElementById('prefixo').value.trim();
+            const garagem = document.getElementById('garagem').value;
+            const status = document.getElementById('status').value;
+
+            if (!prefixo || !garagem || !status) {
+                alert('Por favor, preencha todos os campos!');
+                return;
+            }
+
+            // Verificar se já existe
+            if (veiculos.some(v => v.prefixo === prefixo)) {
+                alert('Veículo com este prefixo já existe!');
+                return;
+            }
+
+            const novoVeiculo = {
+                prefixo: prefixo,
+                garagem: garagem,
+                status: status,
+                comentario: document.getElementById('comentario').value.trim(),
+                data: new Date().toLocaleString('pt-BR')
+            };
+
+            veiculos.push(novoVeiculo);
+            localStorage.setItem('veiculos', JSON.stringify(veiculos));
+            
+            // Limpar formulário
+            document.getElementById('formVeiculo').reset();
+            
+            // Atualizar dashboard
+            atualizarDashboard();
+        }
+
+        // Atualizar status
+        function atualizarStatus(prefixo, novoStatus) {
+            const veiculo = veiculos.find(v => v.prefixo === prefixo);
+            if (veiculo) {
+                veiculo.status = novoStatus;
+                veiculo.data = new Date().toLocaleString('pt-BR');
+                localStorage.setItem('veiculos', JSON.stringify(veiculos));
+                atualizarDashboard();
+            }
+        }
+
+        // Atualizar garagem
+        function atualizarGaragem(prefixo, novaGaragem) {
+            const veiculo = veiculos.find(v => v.prefixo === prefixo);
+            if (veiculo) {
+                veiculo.garagem = novaGaragem;
+                veiculo.data = new Date().toLocaleString('pt-BR');
+                localStorage.setItem('veiculos', JSON.stringify(veiculos));
+                atualizarDashboard();
+            }
+        }
+
+        // Salvar comentário
+        function salvarComentario(prefixo, novoComentario) {
+            const veiculo = veiculos.find(v => v.prefixo === prefixo);
+            if (veiculo) {
+                veiculo.comentario = novoComentario;
+                veiculo.data = new Date().toLocaleString('pt-BR');
+                localStorage.setItem('veiculos', JSON.stringify(veiculos));
+                alert('Comentário salvo com sucesso!');
+            }
+        }
+
+        // Excluir veículo
+        function excluirVeiculo(prefixo) {
+            if (confirm(`Tem certeza que deseja excluir o veículo ${prefixo}?`)) {
+                veiculos = veiculos.filter(v => v.prefixo !== prefixo);
+                localStorage.setItem('veiculos', JSON.stringify(veiculos));
+                atualizarDashboard();
+            }
+        }
+
+        // Atualizar dashboard
+        function atualizarDashboard() {
+            const total = veiculos.length;
+            const concluidos = veiculos.filter(v => v.status === 'Concluído').length;
+            const andamento = veiculos.filter(v => v.status === 'Em Andamento').length;
+            const pendentes = veiculos.filter(v => v.status === 'Pendente').length;
+            const percentual = total > 0 ? (concluidos / total * 100) : 0;
+
+            // Atualizar estatísticas
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statConcluidos').textContent = concluidos;
+            document.getElementById('statAndamento').textContent = andamento;
+            document.getElementById('statPendentes').textContent = pendentes;
+            document.getElementById('statPercentual').textContent = percentual.toFixed(1) + '%';
+
+            // Atualizar métricas
+            document.getElementById('metricTotal').textContent = total;
+            document.getElementById('metricConcluidos').textContent = concluidos;
+            document.getElementById('metricAndamento').textContent = andamento;
+            document.getElementById('metricPercentual').textContent = percentual.toFixed(1) + '%';
+
+            // Atualizar progresso
+            document.getElementById('progressBar').style.width = percentual + '%';
+            document.getElementById('progressText').textContent = percentual.toFixed(1) + '%';
+
+            // Atualizar garagens
+            atualizarGaragens();
+        }
+
+        // Atualizar seções das garagens
+        function atualizarGaragens() {
+            const garagens = {
+                'M.E OSASCO': [],
+                'M.E SANTANA': [], 
+                'MEGACAM OSASCO': []
+            };
+
+            // Agrupar veículos por garagem
+            veiculos.forEach(veiculo => {
+                if (garagens[veiculo.garagem]) {
+                    garagens[veiculo.garagem].push(veiculo);
+                }
+            });
+
+            let html = '';
+
+            for (const [garagemNome, veiculosGaragem] of Object.entries(garagens)) {
+                const totalGaragem = veiculosGaragem.length;
+                const concluidosGaragem = veiculosGaragem.filter(v => v.status === 'Concluído').length;
+                const andamentoGaragem = veiculosGaragem.filter(v => v.status === 'Em Andamento').length;
+                const pendentesGaragem = veiculosGaragem.filter(v => v.status === 'Pendente').length;
+                const percentualGaragem = totalGaragem > 0 ? (concluidosGaragem / totalGaragem * 100) : 0;
+
+                html += `
+                    <div class="garagem-section">
+                        <div class="garagem-header">
+                            <h2 class="garagem-title">
+                                <i class="fas fa-warehouse"></i> ${garagemNome}
+                            </h2>
+                            <div style="color: var(--cinza-bem-claro); font-weight: 700; font-size: 1.1rem;">
+                                ${totalGaragem} veículos • ${percentualGaragem.toFixed(1)}% concluído
+                            </div>
+                        </div>
+                        
+                        <div class="garagem-stats">
+                            <div class="stat">
+                                <div class="stat-value" style="color: var(--azul);">${totalGaragem}</div>
+                                <div class="stat-label">Total</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value" style="color: var(--verde);">${concluidosGaragem}</div>
+                                <div class="stat-label">Concluídos</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value" style="color: var(--laranja);">${andamentoGaragem}</div>
+                                <div class="stat-label">Em Andamento</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value" style="color: var(--vermelho);">${pendentesGaragem}</div>
+                                <div class="stat-label">Pendentes</div>
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                            <span style="font-weight: 700; color: var(--cinza-ultra-claro);">
+                                Progresso da Garagem
+                            </span>
+                            <span style="color: var(--cinza-bem-claro); font-weight: 600;">${percentualGaragem.toFixed(1)}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill progress-success" style="width: ${percentualGaragem}%"></div>
+                        </div>
+                `;
+
+                if (veiculosGaragem.length > 0) {
+                    html += `
+                        <div class="veiculos-grid">
+                    `;
+
+                    veiculosGaragem.forEach(veiculo => {
+                        const statusClass = veiculo.status.toLowerCase().replace(' ', '');
+                        html += `
+                            <div class="veiculo-card ${statusClass}">
+                                <div class="veiculo-prefixo">${veiculo.prefixo}</div>
+                                <div class="veiculo-status status-${statusClass}">
+                                    ${veiculo.status}
+                                </div>
+                                <div class="veiculo-data">
+                                    <i class="far fa-clock"></i> ${veiculo.data}
+                                </div>
+                                <div class="veiculo-actions">
+                                    <select class="action-select" onchange="atualizarStatus('${veiculo.prefixo}', this.value)">
+                                        <option value="Pendente" ${veiculo.status === 'Pendente' ? 'selected' : ''}>🟡 Pendente</option>
+                                        <option value="Em Andamento" ${veiculo.status === 'Em Andamento' ? 'selected' : ''}>🟠 Em Andamento</option>
+                                        <option value="Concluído" ${veiculo.status === 'Concluído' ? 'selected' : ''}>🟢 Concluído</option>
+                                    </select>
+                                    
+                                    <select class="action-select" onchange="atualizarGaragem('${veiculo.prefixo}', this.value)">
+                                        <option value="M.E OSASCO" ${veiculo.garagem === 'M.E OSASCO' ? 'selected' : ''}>🏭 M.E OSASCO</option>
+                                        <option value="M.E SANTANA" ${veiculo.garagem === 'M.E SANTANA' ? 'selected' : ''}>🏭 M.E SANTANA</option>
+                                        <option value="MEGACAM OSASCO" ${veiculo.garagem === 'MEGACAM OSASCO' ? 'selected' : ''}>🏭 MEGACAM OSASCO</option>
+                                    </select>
+                                    
+                                    <button class="btn-excluir" onclick="excluirVeiculo('${veiculo.prefixo}')">
+                                        <i class="fas fa-trash"></i> Excluir
+                                    </button>
+
+                                    <div class="comentario-box">
+                                        <textarea 
+                                            class="comentario-input" 
+                                            placeholder="Adicione um comentário..."
+                                            onchange="salvarComentario('${veiculo.prefixo}', this.value)"
+                                        >${veiculo.comentario || ''}</textarea>
+                                        <button class="btn-salvar-comentario" onclick="salvarComentario('${veiculo.prefixo}', this.previousElementSibling.value)">
+                                            <i class="fas fa-save"></i> Salvar Comentário
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    html += `
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-bus"></i>
+                            </div>
+                            <h3 style="color: var(--cinza-bem-claro); margin-bottom: 1rem; font-size: 1.3rem;">
+                                Nenhum veículo cadastrado
+                            </h3>
+                            <p style="color: var(--cinza-mais-claro); font-size: 1rem;">
+                                Use o formulário ao lado para adicionar veículos
+                            </p>
+                        </div>
+                    `;
+                }
+
+                html += `
+                    </div>
+                `;
+            }
+
+            document.getElementById('garagensContainer').innerHTML = html;
+        }
+
+        // Inicializar
         document.addEventListener('DOMContentLoaded', function() {
+            atualizarDataHora();
+            atualizarDashboard();
+            
+            // Atualizar data/hora a cada minuto
+            setInterval(atualizarDataHora, 60000);
+            
+            // Animações
             const animateElements = document.querySelectorAll('.metric-card, .veiculo-card, .garagem-section');
             animateElements.forEach((el, index) => {
                 el.style.opacity = '0';
@@ -792,11 +952,6 @@
                 }, index * 100);
             });
         });
-        
-        // Auto-refresh a cada 30 segundos para ver atualizações de outros usuários
-        setTimeout(() => {
-            window.location.reload();
-        }, 30000);
     </script>
 </body>
 </html>
