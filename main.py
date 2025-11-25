@@ -12,20 +12,410 @@ file_lock = Lock()
 
 DATA_FILE = 'veiculos.json'
 
+# Dados iniciais padrão
+DADOS_INICIAIS = [
+  {
+    "prefixo": "257",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:44"
+  },
+  {
+    "prefixo": "258",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:44"
+  },
+  {
+    "prefixo": "259",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:44"
+  },
+  {
+    "prefixo": "260",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 09:59"
+  },
+  {
+    "prefixo": "261",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 09:59"
+  },
+  {
+    "prefixo": "262",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 09:59"
+  },
+  {
+    "prefixo": "263",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:00"
+  },
+  {
+    "prefixo": "264",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:00"
+  },
+  {
+    "prefixo": "265",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:00"
+  },
+  {
+    "prefixo": "266",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:00"
+  },
+  {
+    "prefixo": "267",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:00"
+  },
+  {
+    "prefixo": "268",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:00"
+  },
+  {
+    "prefixo": "269",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:00"
+  },
+  {
+    "prefixo": "270",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:00"
+  },
+  {
+    "prefixo": "20011",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 14:49"
+  },
+  {
+    "prefixo": "20012",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:00"
+  },
+  {
+    "prefixo": "20013",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:00"
+  },
+  {
+    "prefixo": "20014",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:01"
+  },
+  {
+    "prefixo": "20015",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:01"
+  },
+  {
+    "prefixo": "20016",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:02"
+  },
+  {
+    "prefixo": "20017",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:02"
+  },
+  {
+    "prefixo": "20018",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:02"
+  },
+  {
+    "prefixo": "20019",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:02"
+  },
+  {
+    "prefixo": "20020",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:02"
+  },
+  {
+    "prefixo": "20021",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:02"
+  },
+  {
+    "prefixo": "20022",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:02"
+  },
+  {
+    "prefixo": "20023",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:02"
+  },
+  {
+    "prefixo": "20024",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:03"
+  },
+  {
+    "prefixo": "20025",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:03"
+  },
+  {
+    "prefixo": "20026",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:03"
+  },
+  {
+    "prefixo": "20027",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:03"
+  },
+  {
+    "prefixo": "20028",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:03"
+  },
+  {
+    "prefixo": "20029",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:03"
+  },
+  {
+    "prefixo": "20030",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:03"
+  },
+  {
+    "prefixo": "20031",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:04"
+  },
+  {
+    "prefixo": "20032",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:04"
+  },
+  {
+    "prefixo": "20033",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:04"
+  },
+  {
+    "prefixo": "20034",
+    "garagem": "M.E OSASCO",
+    "status": "Concluído",
+    "data": "21/10/2025 11:08",
+    "comentario": ""
+  },
+  {
+    "prefixo": "20035",
+    "garagem": "M.E OSASCO",
+    "status": "Em Andamento",
+    "data": "21/10/2025 11:08",
+    "comentario": "Faltando instalar câmera de ré"
+  },
+  {
+    "prefixo": "20036",
+    "garagem": "M.E OSASCO",
+    "status": "Em Andamento",
+    "data": "21/10/2025 11:09",
+    "comentario": "Faltando câmera de ré"
+  },
+  {
+    "prefixo": "20037",
+    "garagem": "M.E OSASCO",
+    "status": "Em Andamento",
+    "data": "21/10/2025 11:09",
+    "comentario": "Faltando configuração"
+  },
+  {
+    "prefixo": "20038",
+    "garagem": "M.E OSASCO",
+    "status": "Em Andamento",
+    "data": "21/10/2025 11:10",
+    "comentario": ""
+  },
+  {
+    "prefixo": "20039",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:04"
+  },
+  {
+    "prefixo": "20040",
+    "garagem": "M.E OSASCO",
+    "status": "Pendente",
+    "data": "15/10/2025 10:04"
+  },
+  {
+    "prefixo": "20520",
+    "garagem": "M.E SANTANA",
+    "status": "Pendente",
+    "data": "15/10/2025 10:05"
+  },
+  {
+    "prefixo": "20524",
+    "garagem": "M.E SANTANA",
+    "status": "Pendente",
+    "data": "15/10/2025 10:05"
+  },
+  {
+    "prefixo": "20531",
+    "garagem": "M.E SANTANA",
+    "status": "Pendente",
+    "data": "15/10/2025 10:05"
+  },
+  {
+    "prefixo": "20532",
+    "garagem": "M.E SANTANA",
+    "status": "Pendente",
+    "data": "15/10/2025 10:05"
+  },
+  {
+    "prefixo": "20533",
+    "garagem": "M.E SANTANA",
+    "status": "Pendente",
+    "data": "15/10/2025 10:05"
+  },
+  {
+    "prefixo": "20534",
+    "garagem": "M.E SANTANA",
+    "status": "Pendente",
+    "data": "15/10/2025 10:06"
+  },
+  {
+    "prefixo": "20535",
+    "garagem": "M.E SANTANA",
+    "status": "Pendente",
+    "data": "15/10/2025 10:06"
+  },
+  {
+    "prefixo": "20536",
+    "garagem": "M.E SANTANA",
+    "status": "Pendente",
+    "data": "15/10/2025 10:06"
+  },
+  {
+    "prefixo": "20537",
+    "garagem": "M.E SANTANA",
+    "status": "Pendente",
+    "data": "15/10/2025 10:06"
+  },
+  {
+    "prefixo": "20538",
+    "garagem": "M.E SANTANA",
+    "status": "Pendente",
+    "data": "15/10/2025 10:06"
+  },
+  {
+    "prefixo": "20539",
+    "garagem": "M.E SANTANA",
+    "status": "Pendente",
+    "data": "15/10/2025 10:06"
+  },
+  {
+    "prefixo": "20540",
+    "garagem": "M.E SANTANA",
+    "status": "Pendente",
+    "data": "15/10/2025 10:06"
+  },
+  {
+    "prefixo": "20541",
+    "garagem": "M.E SANTANA",
+    "status": "Pendente",
+    "data": "15/10/2025 10:06"
+  },
+  {
+    "prefixo": "20543",
+    "garagem": "M.E SANTANA",
+    "status": "Pendente",
+    "data": "15/10/2025 10:06"
+  },
+  {
+    "prefixo": "20544",
+    "garagem": "M.E SANTANA",
+    "status": "Pendente",
+    "data": "15/10/2025 10:06"
+  },
+  {
+    "prefixo": "20545",
+    "garagem": "M.E SANTANA",
+    "status": "Pendente",
+    "data": "15/10/2025 10:06"
+  },
+  {
+    "prefixo": "20542",
+    "garagem": "M.E SANTANA",
+    "status": "Pendente",
+    "data": "15/10/2025 10:07"
+  }
+]
+
+def inicializar_arquivo():
+    """Inicializa o arquivo com dados padrão se não existir"""
+    try:
+        if not os.path.exists(DATA_FILE):
+            print("📁 Criando arquivo veiculos.json com dados iniciais...")
+            with file_lock:
+                with open(DATA_FILE, 'w', encoding='utf-8') as f:
+                    json.dump(DADOS_INICIAIS, f, ensure_ascii=False, indent=2)
+            return True
+        return True
+    except Exception as e:
+        print(f"❌ Erro ao inicializar arquivo: {e}")
+        return False
+
 def carregar_dados():
     """Carrega os dados do arquivo JSON"""
     try:
+        # Garante que o arquivo existe
+        inicializar_arquivo()
+        
         with file_lock:
-            if os.path.exists(DATA_FILE):
-                with open(DATA_FILE, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            else:
-                # Cria arquivo vazio se não existir
-                salvar_dados([])
-                return []
+            with open(DATA_FILE, 'r', encoding='utf-8') as f:
+                dados = json.load(f)
+                print(f"📊 Dados carregados: {len(dados)} veículos")
+                return dados
     except Exception as e:
         print(f"❌ Erro ao carregar dados: {e}")
-        return []
+        # Retorna dados iniciais em caso de erro
+        return DADOS_INICIAIS
 
 def salvar_dados(veiculos):
     """Salva os dados no arquivo JSON"""
@@ -33,6 +423,7 @@ def salvar_dados(veiculos):
         with file_lock:
             with open(DATA_FILE, 'w', encoding='utf-8') as f:
                 json.dump(veiculos, f, ensure_ascii=False, indent=2)
+            print(f"💾 Dados salvos: {len(veiculos)} veículos")
         return True
     except Exception as e:
         print(f"❌ Erro ao salvar dados: {e}")
@@ -177,10 +568,35 @@ def health_check():
         'veiculos_count': len(carregar_dados())
     })
 
+@app.route('/debug')
+def debug():
+    """Endpoint para debug"""
+    info = {
+        'diretorio_atual': os.getcwd(),
+        'arquivos': os.listdir('.'),
+        'existe_veiculos_json': os.path.exists(DATA_FILE),
+        'tamanho_veiculos_json': os.path.getsize(DATA_FILE) if os.path.exists(DATA_FILE) else 0,
+        'dados_carregados': len(carregar_dados())
+    }
+    return jsonify(info)
+
+@app.route('/resetar-dados', methods=['POST'])
+def resetar_dados():
+    """Rota para resetar dados para os iniciais"""
+    try:
+        salvar_dados(DADOS_INICIAIS)
+        return redirect(url_for('dashboard'))
+    except Exception as e:
+        return f"Erro ao resetar dados: {e}", 500
+
 def get_port():
     return int(os.environ.get('PORT', 5000))
 
 if __name__ == '__main__':
+    # Inicializa o arquivo ao iniciar o servidor
+    inicializar_arquivo()
     port = get_port()
     print(f"🚀 Iniciando servidor Flask na porta {port}...")
+    print(f"📁 Diretório atual: {os.getcwd()}")
+    print(f"📁 Arquivos no diretório: {os.listdir('.')}")
     app.run(host='0.0.0.0', port=port, debug=False)
