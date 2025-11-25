@@ -1,284 +1,186 @@
-import streamlit as st
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
+from flask import Flask, render_template, request, jsonify, redirect, url_for
+import json
+import os
 from datetime import datetime
-import numpy as np
+from threading import Lock
 
-# Configuração da página
-st.set_page_config(
-    page_title="Dashboard Equipamentos AT",
-    page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+app = Flask(__name__)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'chave-desenvolvimento')
 
-# Carregar dados com tratamento de erro melhorado
-@st.cache_data(ttl=3600)  # Cache de 1 hora para evitar memory leaks
-def load_data():
+# Lock para thread safety
+file_lock = Lock()
+
+DATA_FILE = 'veiculos.json'
+
+def carregar_dados():
+    """Carrega os dados do arquivo JSON"""
     try:
-        # Dados de exemplo - substitua pela sua planilha real
-        data = {
-            'Projeto': ['Intermunicipal', 'Municipal', 'Intermunicipal', 'Municipal'],
-            'Fornecedor': ['Autopass', 'Viação São Paulo', 'Autopass', 'Metra'],
-            'Modelo': ['K4', 'BX-345', 'K4', 'M200'],
-            'C_Arquivo': ['SIM', 'NÃO', 'SIM', 'SIM'],
-            'Informacao_arquivo': ['187', '', '189', '205'],
-            'Numero_serie': ['SN001', 'SN002', 'SN003', 'SN001'],
-            'Defeito': ['Não liga', 'Tela queimada', 'Problema audio', 'Não carrega'],
-            'Data_envio': ['2024-01-15', '2024-02-10', '2024-03-05', '2024-01-20'],
-            'Data_retorno': ['2024-01-30', '2024-02-25', '2024-03-20', '2024-02-05'],
-            'Quantidade': [1, 1, 1, 2],
-            'Empresa': ['AVUL', 'VSBL', 'AVUL', 'AVUL'],
-            'Filial': ['Osasco', 'Jaguara', 'Osasco', 'Santana']
-        }
-        df = pd.DataFrame(data)
-        
-        # Converter datas com tratamento de erro
-        df['Data_envio'] = pd.to_datetime(df['Data_envio'], errors='coerce')
-        df['Data_retorno'] = pd.to_datetime(df['Data_retorno'], errors='coerce')
-        
-        # Remover linhas com datas inválidas
-        df = df.dropna(subset=['Data_envio'])
-        
-        return df
-    except Exception as e:
-        st.error(f"Erro ao carregar dados: {e}")
-        return pd.DataFrame()
-
-df = load_data()
-
-# Sidebar - Filtros
-st.sidebar.header("🔧 Filtros")
-
-# Verificar se há dados antes de prosseguir
-if df.empty:
-    st.error("❌ Não há dados para exibir. Verifique a fonte de dados.")
-    st.stop()
-
-# Filtro por período com validação
-try:
-    min_date = df['Data_envio'].min().date()
-    max_date = df['Data_envio'].max().date()
-    
-    date_range = st.sidebar.date_input(
-        "Período",
-        [min_date, max_date],
-        min_value=min_date,
-        max_value=max_date
-    )
-except Exception as e:
-    st.sidebar.error("Erro ao carregar filtro de datas")
-    date_range = [df['Data_envio'].min().date(), df['Data_envio'].max().date()]
-
-# Filtros múltiplos com validação
-try:
-    empresa_filter = st.sidebar.multiselect(
-        "Empresa",
-        options=df['Empresa'].unique(),
-        default=df['Empresa'].unique()
-    )
-
-    projeto_filter = st.sidebar.multiselect(
-        "Projeto", 
-        options=df['Projeto'].unique(),
-        default=df['Projeto'].unique()
-    )
-    
-    # Aplicar filtros com validação
-    if empresa_filter and projeto_filter:
-        df_filtered = df[
-            (df['Empresa'].isin(empresa_filter)) & 
-            (df['Projeto'].isin(projeto_filter))
-        ]
-    else:
-        df_filtered = df.copy()
-        
-except Exception as e:
-    st.error(f"Erro ao aplicar filtros: {e}")
-    df_filtered = df.copy()
-
-# BUSCADOR POR NÚMERO DE SÉRIE
-st.sidebar.header("🔍 Buscar Equipamento")
-numero_serie_busca = st.sidebar.text_input("Digite o número de série:")
-
-# LAYOUT PRINCIPAL
-st.title("📊 Dashboard de Equipamentos - Assistência Técnica")
-
-try:
-    if numero_serie_busca:
-        # BUSCA ESPECÍFICA com tratamento de erro
-        equipamento_data = df[df['Numero_serie'] == numero_serie_busca]
-        
-        if not equipamento_data.empty:
-            st.header(f"🔍 Equipamento: {numero_serie_busca}")
-            
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                st.subheader("📋 Dados do Equipamento")
-                st.write(f"**Modelo:** {equipamento_data['Modelo'].iloc[0]}")
-                st.write(f"**Fornecedor:** {equipamento_data['Fornecedor'].iloc[0]}")
-                st.write(f"**Empresa/Filial:** {equipamento_data['Empresa'].iloc[0]} - {equipamento_data['Filial'].iloc[0]}")
-                st.write(f"**Projeto:** {equipamento_data['Projeto'].iloc[0]}")
-            
-            with col2:
-                st.subheader("🔄 Histórico")
-                total_envios = len(equipamento_data)
-                st.metric("Total de Envios", total_envios)
-                st.write(f"**Primeiro envio:** {equipamento_data['Data_envio'].min().strftime('%d/%m/%Y')}")
-                st.write(f"**Último envio:** {equipamento_data['Data_envio'].max().strftime('%d/%m/%Y')}")
-                
-                # Status atual com tratamento de NaN
-                ultimo_envio = equipamento_data.loc[equipamento_data['Data_envio'].idxmax()]
-                if pd.isna(ultimo_envio['Data_retorno']):
-                    st.error("⏳ Status: Em assistência")
-                else:
-                    st.success("✅ Status: Retornado")
-            
-            with col3:
-                st.subheader("📊 Métricas")
-                # Tempo médio em assistência com tratamento
-                tempos_delta = (equipamento_data['Data_retorno'] - equipamento_data['Data_envio']).dt.days
-                tempos_media = tempos_delta.mean()
-                if not pd.isna(tempos_media):
-                    st.metric("Tempo médio AT", f"{tempos_media:.0f} dias")
-                else:
-                    st.metric("Tempo médio AT", "N/A")
-                
-                # Fornecedor mais usado
-                if not equipamento_data['Fornecedor'].empty:
-                    fornecedor_mais_comum = equipamento_data['Fornecedor'].mode()
-                    if not fornecedor_mais_comum.empty:
-                        st.write(f"**Fornecedor mais usado:** {fornecedor_mais_comum.iloc[0]}")
-            
-            # TABELA DE HISTÓRICO COMPLETO
-            st.subheader("📋 Histórico Completo de Assistências")
-            historico_cols = ['Data_envio', 'Data_retorno', 'Defeito', 'Fornecedor', 'C_Arquivo']
-            st.dataframe(equipamento_data[historico_cols].sort_values('Data_envio', ascending=False))
-            
-        else:
-            st.warning("❌ Número de série não encontrado")
-
-    else:
-        # DASHBOARD GERAL
-        
-        # KPIs PRINCIPAIS com verificação de dados
-        st.header("📈 Métricas Gerais")
-        
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            total_envios = len(df_filtered)
-            st.metric("Total de Envios", total_envios)
-        
-        with col2:
-            equipamentos_unicos = df_filtered['Numero_serie'].nunique()
-            st.metric("Equipamentos Únicos", equipamentos_unicos)
-        
-        with col3:
-            # Calcular tempo médio com tratamento
-            tempos_delta = (df_filtered['Data_retorno'] - df_filtered['Data_envio']).dt.days
-            tempo_medio = tempos_delta.mean()
-            if not pd.isna(tempo_medio):
-                st.metric("Tempo Médio AT", f"{tempo_medio:.0f} dias")
+        with file_lock:
+            if os.path.exists(DATA_FILE):
+                with open(DATA_FILE, 'r', encoding='utf-8') as f:
+                    return json.load(f)
             else:
-                st.metric("Tempo Médio AT", "N/A")
+                # Cria arquivo vazio se não existir
+                salvar_dados([])
+                return []
+    except Exception as e:
+        print(f"❌ Erro ao carregar dados: {e}")
+        return []
+
+def salvar_dados(veiculos):
+    """Salva os dados no arquivo JSON"""
+    try:
+        with file_lock:
+            with open(DATA_FILE, 'w', encoding='utf-8') as f:
+                json.dump(veiculos, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception as e:
+        print(f"❌ Erro ao salvar dados: {e}")
+        return False
+
+@app.route('/')
+def dashboard():
+    """Página principal do dashboard"""
+    veiculos = carregar_dados()
+    
+    # Estatísticas gerais
+    total = len(veiculos)
+    concluidos = len([v for v in veiculos if v['status'] == 'Concluído'])
+    andamento = len([v for v in veiculos if v['status'] == 'Em Andamento'])
+    pendentes = len([v for v in veiculos if v['status'] == 'Pendente'])
+    percentual = (concluidos / total * 100) if total > 0 else 0
+    
+    # Agrupar por garagem
+    garagens = {
+        'M.E OSASCO': [],
+        'M.E SANTANA': [], 
+        'MEGACAM OSASCO': []
+    }
+    
+    for veiculo in veiculos:
+        if veiculo['garagem'] in garagens:
+            garagens[veiculo['garagem']].append(veiculo)
+    
+    # Estatísticas por garagem
+    stats_garagens = {}
+    for garagem_nome, veiculos_garagem in garagens.items():
+        total_garagem = len(veiculos_garagem)
+        concluidos_garagem = len([v for v in veiculos_garagem if v['status'] == 'Concluído'])
+        andamento_garagem = len([v for v in veiculos_garagem if v['status'] == 'Em Andamento'])
+        pendentes_garagem = len([v for v in veiculos_garagem if v['status'] == 'Pendente'])
+        percentual_garagem = (concluidos_garagem / total_garagem * 100) if total_garagem > 0 else 0
         
-        with col4:
-            reincidentes = df_filtered['Numero_serie'].value_counts()
-            equipamentos_reincidentes = (reincidentes > 1).sum()
-            st.metric("Equipamentos Reincidentes", equipamentos_reincidentes)
+        stats_garagens[garagem_nome] = {
+            'total': total_garagem,
+            'concluidos': concluidos_garagem,
+            'andamento': andamento_garagem,
+            'pendentes': pendentes_garagem,
+            'percentual': percentual_garagem,
+            'veiculos': veiculos_garagem
+        }
+    
+    return render_template('dashboard.html',
+                         veiculos=veiculos,
+                         total=total,
+                         concluidos=concluidos,
+                         andamento=andamento,
+                         pendentes=pendentes,
+                         percentual=percentual,
+                         garagens=stats_garagens,
+                         agora=datetime.now())
+
+@app.route('/adicionar', methods=['POST'])
+def adicionar_veiculo():
+    """Adiciona um novo veículo"""
+    prefixo = request.form.get('prefixo', '').strip()
+    garagem = request.form.get('garagem', '').strip()
+    status = request.form.get('status', '').strip()
+    comentario = request.form.get('comentario', '').strip()
+    
+    if prefixo and garagem and status:
+        veiculos = carregar_dados()
         
-        # GRÁFICOS apenas se houver dados
-        if not df_filtered.empty:
-            st.header("📊 Análises Visuais")
-            
-            # 1. GRÁFICO MENSAL - TODOS FORNECEDORES
-            st.subheader("📅 Volume Mensal - Todos Fornecedores")
-            
-            try:
-                df_mensal = df_filtered.groupby(df_filtered['Data_envio'].dt.to_period('M')).size().reset_index()
-                df_mensal['Data_envio'] = df_mensal['Data_envio'].dt.to_timestamp()
+        # Verifica se já existe
+        if any(v['prefixo'] == prefixo for v in veiculos):
+            return redirect(url_for('dashboard', erro='veiculo_existente'))
+        
+        novo_veiculo = {
+            'prefixo': prefixo,
+            'garagem': garagem,
+            'status': status,
+            'comentario': comentario,
+            'data': datetime.now().strftime('%d/%m/%Y %H:%M')
+        }
+        
+        veiculos.append(novo_veiculo)
+        salvar_dados(veiculos)
+    
+    return redirect(url_for('dashboard'))
+
+@app.route('/atualizar', methods=['POST'])
+def atualizar_veiculo():
+    """Atualiza um veículo existente"""
+    prefixo = request.form.get('prefixo', '').strip()
+    novo_status = request.form.get('status', '').strip()
+    nova_garagem = request.form.get('garagem', '').strip()
+    novo_comentario = request.form.get('comentario', '').strip()
+    
+    if prefixo:
+        veiculos = carregar_dados()
+        atualizado = False
+        
+        for veiculo in veiculos:
+            if veiculo['prefixo'] == prefixo:
+                if novo_status:
+                    veiculo['status'] = novo_status
+                    atualizado = True
+                if nova_garagem:
+                    veiculo['garagem'] = nova_garagem
+                    atualizado = True
+                if novo_comentario is not None:
+                    veiculo['comentario'] = novo_comentario
+                    atualizado = True
                 
-                fig_mensal = px.line(
-                    df_mensal, 
-                    x='Data_envio', 
-                    y=0,
-                    title="Total de Envios por Mês",
-                    labels={'0': 'Quantidade', 'Data_envio': 'Mês'}
-                )
-                st.plotly_chart(fig_mensal, use_container_width=True)
-            except Exception as e:
-                st.error(f"Erro ao criar gráfico mensal: {e}")
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                # 2. RANKING FORNECEDORES
-                st.subheader("🏆 Ranking por Fornecedor")
-                try:
-                    fornecedores_count = df_filtered['Fornecedor'].value_counts()
-                    fig_fornecedores = px.bar(
-                        fornecedores_count,
-                        title="Total de Envios por Fornecedor",
-                        labels={'value': 'Quantidade', 'index': 'Fornecedor'}
-                    )
-                    st.plotly_chart(fig_fornecedores, use_container_width=True)
-                except Exception as e:
-                    st.error(f"Erro ao criar gráfico de fornecedores: {e}")
-            
-            with col2:
-                # 3. DISTRIBUIÇÃO POR PROJETO/EMPRESA
-                st.subheader("🏢 Distribuição por Empresa")
-                try:
-                    empresa_count = df_filtered['Empresa'].value_counts()
-                    fig_empresa = px.pie(
-                        empresa_count,
-                        values=empresa_count.values,
-                        names=empresa_count.index,
-                        title="Distribuição por Empresa"
-                    )
-                    st.plotly_chart(fig_empresa, use_container_width=True)
-                except Exception as e:
-                    st.error(f"Erro ao criar gráfico de empresas: {e}")
-            
-            # 4. GRÁFICOS INDIVIDUAIS POR FORNECEDOR (TOP 5)
-            st.subheader("📈 Evolução Mensal por Fornecedor (Top 5)")
-            
-            try:
-                top_fornecedores = df_filtered["Fornecedor"].value_counts().head(5).index
-                
-                for fornecedor in top_fornecedores:
-                    df_fornecedor = df_filtered[df_filtered["Fornecedor"] == fornecedor]
-                    if not df_fornecedor.empty:
-                        df_fornecedor_mensal = df_fornecedor.groupby(
-                            df_fornecedor['Data_envio'].dt.to_period('M')
-                        ).size().reset_index()
-                        df_fornecedor_mensal['Data_envio'] = df_fornecedor_mensal['Data_envio'].dt.to_timestamp()
-
-                        fig = px.line(
-                            df_fornecedor_mensal,
-                            x="Data_envio",
-                            y=0,
-                            title=f"{fornecedor} - Evolução Mensal"
-                        )
-                        st.plotly_chart(fig, use_container_width=True)
-            except Exception as e:
-                st.error(f"Erro ao criar gráficos por fornecedor: {e}")
+                if atualizado:
+                    veiculo['data'] = datetime.now().strftime('%d/%m/%Y %H:%M')
+                break
         
-        # TABELA DETALHADA
-        st.header("📋 Dados Detalhados")
-        st.dataframe(df_filtered)
+        if atualizado:
+            salvar_dados(veiculos)
+    
+    return redirect(url_for('dashboard'))
 
-except Exception as e:
-    st.error(f"❌ Ocorreu um erro na aplicação: {e}")
-    st.info("📞 Entre em contato com o suporte técnico")
+@app.route('/excluir', methods=['POST'])
+def excluir_veiculo():
+    """Exclui um veículo"""
+    prefixo = request.form.get('prefixo', '').strip()
+    
+    if prefixo:
+        veiculos = carregar_dados()
+        veiculos = [v for v in veiculos if v['prefixo'] != prefixo]
+        salvar_dados(veiculos)
+    
+    return redirect(url_for('dashboard'))
 
-# Rodapé
-st.sidebar.markdown("---")
-st.sidebar.info("📞 Suporte: equipe@empresa.com")
+@app.route('/api/veiculos', methods=['GET'])
+def api_veiculos():
+    """API para obter dados dos veículos (para AJAX)"""
+    veiculos = carregar_dados()
+    return jsonify(veiculos)
 
-# Limpeza de recursos (importante para estabilidade)
-import gc
-gc.collect()
+@app.route('/health')
+def health_check():
+    """Endpoint de health check"""
+    return jsonify({
+        'status': 'healthy', 
+        'timestamp': datetime.now().isoformat(),
+        'veiculos_count': len(carregar_dados())
+    })
+
+def get_port():
+    return int(os.environ.get('PORT', 5000))
+
+if __name__ == '__main__':
+    port = get_port()
+    print(f"🚀 Iniciando servidor Flask na porta {port}...")
+    app.run(host='0.0.0.0', port=port, debug=False)
